@@ -88,15 +88,40 @@ router.post("/user/login", async (req, res) => {
   }
 });
 
-router.post("/user/favourites", async (req, res) => {
+router.post(
+  "/user/favourites/characters",
+
+  async (req, res) => {
+    try {
+      const userToFind = await User.findOne({ token: req.body.token });
+      if (!userToFind) {
+        return res.status(401).json({ message: "Unauthorized" });
+      } else if (
+        userToFind.favourites_characters.includes(req.body.favouriteId)
+      ) {
+        return res.status(400).json({ message: "Already in favourites" });
+      } else {
+        userToFind.favourites_characters.push(req.body.favouriteId);
+        await userToFind.save();
+      }
+      const toReturn = userToFind;
+
+      return res.status(200).json(toReturn);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+router.post("/user/favourites/comics", async (req, res) => {
   try {
     const userToFind = await User.findOne({ token: req.body.token });
     if (!userToFind) {
       return res.status(401).json({ message: "Unauthorized" });
-    } else if (userToFind.favourites.includes(req.body.favouriteId)) {
+    } else if (userToFind.favourites_comics.includes(req.body.favouriteId)) {
       return res.status(400).json({ message: "Already in favourites" });
     } else {
-      userToFind.favourites.push(req.body.favouriteId);
+      userToFind.favourites_comics.push(req.body.favouriteId);
       await userToFind.save();
     }
     const toReturn = userToFind;
@@ -107,12 +132,12 @@ router.post("/user/favourites", async (req, res) => {
   }
 });
 
-router.get("/user/favourites", isAuthenticated, async (req, res) => {
+router.get("/user/favourites/characters", isAuthenticated, async (req, res) => {
   try {
     isAuthenticated;
     const userToken = req.headers.authorization.replace("Bearer ", "");
     const user = await User.findOne({ token: userToken });
-    const favourites = user.favourites;
+    const favourites = user.favourites_characters;
     const favTab = [];
 
     for (let i = 0; i < favourites.length; i++) {
@@ -123,7 +148,33 @@ router.get("/user/favourites", isAuthenticated, async (req, res) => {
           favTab.push(response.data);
         })
         .catch((error) => {
-          console.log(error.message); // Affichera d'éventuelles erreurs, notamment en cas de problème de connexion Internet.
+          console.log(error.message);
+        });
+    }
+
+    return res.status(200).json(favTab);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/user/favourites/comics", isAuthenticated, async (req, res) => {
+  try {
+    isAuthenticated;
+    const userToken = req.headers.authorization.replace("Bearer ", "");
+    const user = await User.findOne({ token: userToken });
+    const favourites = user.favourites_comics;
+    const favTab = [];
+
+    for (let i = 0; i < favourites.length; i++) {
+      const data = await axios(
+        `https://lereacteur-marvel-api.herokuapp.com/comic/${favourites[i]}?apiKey=${process.env.YOUR_API_KEY}`
+      )
+        .then((response) => {
+          favTab.push(response.data);
+        })
+        .catch((error) => {
+          console.log(error.message);
         });
     }
 
