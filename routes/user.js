@@ -184,4 +184,55 @@ router.get("/user/favourites/comics", isAuthenticated, async (req, res) => {
   }
 });
 
+router.delete("/user/favourites/comics", isAuthenticated, async (req, res) => {
+  try {
+    isAuthenticated;
+    const userToken = req.headers.authorization.replace("Bearer ", "");
+    const user = await User.findOne({ token: userToken });
+    const favourites = user.favourites_comics;
+    const comicId = req.body.comicId;
+
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (favourites.includes(comicId)) {
+      const index = favourites.indexOf(comicId);
+      favourites.splice(index, 1);
+      await user.save();
+    }
+
+    return res.status(200).json({ message: "Comic deleted" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+router.delete(
+  "/user/favourites/characters",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      isAuthenticated;
+      const userToken = req.headers.authorization.replace("Bearer ", "");
+      const user = await User.findOne({ token: userToken });
+      const favourites = user.favourites_characters;
+      const characterId = req.body.characterId;
+
+      if (!user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      if (favourites.includes(characterId)) {
+        const index = favourites.indexOf(characterId);
+        favourites.splice(index, 1);
+        await user.save();
+      }
+
+      return res.status(200).json({ message: "character deleted" });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
+);
+
 module.exports = router;
